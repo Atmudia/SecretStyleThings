@@ -1,10 +1,8 @@
-﻿using JetBrains.Annotations;
-using Secret_Style_Things.Utils;
+﻿using Secret_Style_Things.Utils;
 using UnityEngine;
-using static Secret_Style_Things.Main;
 
 namespace Secret_Style_Things.Assets
-{ 
+{
     internal static class PlortAssets
     {
         internal static readonly Mesh NormalPlort = SRObjects.Get<Mesh>("plort");
@@ -15,6 +13,5 @@ namespace Secret_Style_Things.Assets
         internal static readonly Material FXFire = SRObjects.Get<Material>("fx firePlortAura");
         internal static readonly Material FXFireExotic = SRObjects.Get<Material>("fx fireSlimeAura_exotic");
         internal static readonly Mesh PuddleDlcFlowerLOD0 = SRObjects.Get<Mesh>("puddle_DLC_flower_LOD0");
-
     }
 }

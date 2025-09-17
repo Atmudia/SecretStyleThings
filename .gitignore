@@ -1,0 +1,9 @@
+/bin
+/obj
+/.idea
+/.vs
+/Secret Style Things.sln.DotSettings.user.sln
+/.vs/*
+/packages
+/packages/*
+/packages/Krafs.Publicizer.2.3.0

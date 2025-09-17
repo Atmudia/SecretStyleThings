@@ -1,14 +1,16 @@
 ﻿using HarmonyLib;
+using UnityEngine;
 
-namespace Secret_Style_Things.Harmony
+namespace Secret_Style_Things.Patches
 {
-    [HarmonyPatch(typeof(StorageSlotUI), "Awake")]
-    class Patch_StorageSlot
+    [HarmonyPatch]
+    internal static class Patch_UI
     {
-        static void Postfix(StorageSlotUI __instance)
+        [HarmonyPatch(typeof(StorageSlotUI), nameof(StorageSlotUI.Awake)), HarmonyPostfix]
+        public static void Awake(StorageSlotUI __instance)
         {
             MessageDirector.BundlesListener method = null;
-            method = (x) =>
+            method = x =>
             {
                 if (__instance)
                     __instance.currentlyStoredId = null;
@@ -17,15 +19,12 @@ namespace Secret_Style_Things.Harmony
             };
             GameContext.Instance.MessageDirector.bundlesListeners += method;
         }
-    }
-
-    [HarmonyPatch(typeof(MarketUI), "Start")]
-    class Patch_Market
-    {
-        static void Postfix(MarketUI __instance)
+        
+        [HarmonyPatch(typeof(MarketUI), nameof(MarketUI.Start)), HarmonyPostfix]
+        public static void Start(MarketUI __instance)
         {
             MessageDirector.BundlesListener method = null;
-            method = (x) =>
+            method = x =>
             {
                 if (__instance)
                 {
@@ -38,5 +37,14 @@ namespace Secret_Style_Things.Harmony
             };
             GameContext.Instance.MessageDirector.bundlesListeners += method;
         }
+
+        [HarmonyPatch(typeof(MapUI), nameof(MapUI.ScaleMarkersOnZoom)), HarmonyPrefix]
+        public static void ScaleMarkersOnZoom(MapUI __instance)
+        {
+            foreach (DisplayOnMap mappableObject in __instance.mappableObjects)
+                if (!mappableObject.marker.rect)
+                    mappableObject.marker.rect = mappableObject.marker.GetComponent<RectTransform>();
+        }
+        
     }
 }

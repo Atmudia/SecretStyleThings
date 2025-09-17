@@ -1,9 +1,7 @@
 ﻿{
   "id": "secretstylethings",
   "name": "Secret Style Things",
-  "author": "KomiksPL",
+  "author": "Atmudia and Aidanamite",
   "description": "This mod applies a Slime's Secret Style to Gordos and Plorts.",
-  "version":  "1.5",
-  "load_before": [
-  ]
+  "version":  "1.7.0"
 }

@@ -1,13 +1,11 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using System.Linq;
 using Secret_Style_Things.Assets;
+using UnityEngine;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Console = SRML.Console.Console;
-using System.Linq;
-using HarmonyLib;
-using SRML.Utils;
 
 namespace Secret_Style_Things.Utils
 {
@@ -52,7 +50,7 @@ namespace Secret_Style_Things.Utils
         
 
         public static Dictionary<Identifiable.Id, SecretStyleData> SecretStyleData = new Dictionary<Identifiable.Id, SecretStyleData>();
-        public static Dictionary<Identifiable.Id, Action<Transform, SlimeAppearance>> ExtraApperanceApplicators = new Dictionary<Identifiable.Id, Action<Transform, SlimeAppearance>>()
+        public static Dictionary<Identifiable.Id, Action<Transform, SlimeAppearance>> ExtraApperanceApplicators = new Dictionary<Identifiable.Id, Action<Transform, SlimeAppearance>>
         {
             [Identifiable.Id.ROCK_GORDO] = (x,y) => x.Find("Vibrating/rocks_spine_LOD0").GetComponent<SkinnedMeshRenderer>().sharedMaterial = y.Structures[1].DefaultMaterials[0],
             [Identifiable.Id.TABBY_GORDO] = (x,y) => {
@@ -74,7 +72,6 @@ namespace Secret_Style_Things.Utils
             },
             [Identifiable.Id.PHOSPHOR_GORDO] = (x,y) =>
             {
-
                 x.Find("Vibrating/bone_root/bone_slime/bone_wing_right").GetComponent<MeshFilter>().sharedMesh = y.SaveSet == SlimeAppearance.AppearanceSaveSet.SECRET_STYLE ? GordoAssets.PhosphorDlcWingR : GordoAssets.WingR;
                 x.Find("Vibrating/bone_root/bone_slime/bone_wing_left").GetComponent<MeshFilter>().sharedMesh = y.SaveSet == SlimeAppearance.AppearanceSaveSet.SECRET_STYLE ? GordoAssets.PhosphorDlcWingL : GordoAssets.WingL;
                 x.Find("Vibrating/bone_root/bone_slime/bone_wing_right").GetComponent<MeshRenderer>().sharedMaterial = y.Structures[2].DefaultMaterials[0];
@@ -242,7 +239,7 @@ namespace Secret_Style_Things.Utils
                     {
                         DervishPlortResize = Object.Instantiate(r.sharedMaterial);
                         DervishPlortResize.name = "plortDervishExotic";
-                        DervishPlortResize.SetFloatArray("_GalaxyLargoScale", new float[] { 1, 0.2f });
+                        DervishPlortResize.SetFloatArray("_GalaxyLargoScale", new[] { 1, 0.2f });
                     }
                     r.sharedMaterial = DervishPlortResize;
                 }
@@ -295,30 +292,37 @@ namespace Secret_Style_Things.Utils
         };
         
         static Dictionary<Identifiable.Id, Sprite> originalGordoSprites = new Dictionary<Identifiable.Id, Sprite>();
-        internal static void UpdateGordoStyles(string basicName)
+        public static Dictionary<Identifiable.Id, Identifiable.Id> GordoToSlime = new Dictionary<Identifiable.Id, Identifiable.Id>()
         {
-            var gordoId = Identifiable.GORDO_CLASS.FirstOrDefault((x) => x.BasicName() == basicName);
-            var slimeId = Identifiable.SLIME_CLASS.FirstOrDefault((x) => x.BasicName() == basicName);
-            if (!SecretStyleData.TryGetValue(gordoId, out var data))
+            [Identifiable.Id.PARTY_GORDO] = Identifiable.Id.PINK_SLIME
+        };
+        internal static Identifiable.Id GetSlimeForGordo(Identifiable.Id gordoId)
+        {
+            if (GordoToSlime.TryGetValue(gordoId, out var slimeId) && slimeId != Identifiable.Id.NONE)
+                return slimeId;
+            var basic = gordoId.BasicName();
+            return GordoToSlime[gordoId] = Identifiable.SLIME_CLASS.FirstOrDefault(x => x.BasicName() == basic);
+        }
+        internal static void UpdateGordoStyles(Identifiable.Id slimeId)
+        {
+            if (slimeId == Identifiable.Id.NONE)
                 return;
-            if (gordoId == Identifiable.Id.NONE || slimeId == Identifiable.Id.NONE)
-                return;
-            bool flag2 = originalGordoSprites.TryGetValue(gordoId, out var s);
+            var basicName = slimeId.BasicName();
             bool flag = Main.activesecrets.Exists((j) => j.basicName == basicName);
-            if (flag && data.sprite)
-                s = data.sprite;
             var appearance = SRSingleton<GameContext>.Instance.SlimeDefinitions.GetSlimeByIdentifiableId(slimeId).GetAppearanceForSet(flag ? SlimeAppearance.AppearanceSaveSet.SECRET_STYLE : SlimeAppearance.AppearanceSaveSet.CLASSIC);
             foreach (var gordo in Resources.FindObjectsOfTypeAll<GordoIdentifiable>())
-            
-                if (gordo.id == gordoId || (gordoId == Identifiable.Id.PINK_GORDO && gordo.id == Identifiable.Id.PARTY_GORDO))
+    
+                if (GetSlimeForGordo(gordo.id) == slimeId && SecretStyleData.TryGetValue(gordo.id,out var data))
                 {
                     var display = gordo.GetComponent<GordoDisplayOnMap>();
                     if (display)
                     {
+                        bool flag2 = originalGordoSprites.TryGetValue(gordo.id, out var s);
+                        if (flag && data.sprite)
+                            s = data.sprite;
                         if (!flag2 && display.markerPrefab)
                         {
-                            originalGordoSprites.Add(gordo.id, display.markerPrefab.GetComponent<Image>().sprite);
-                            flag2 = true;
+                            originalGordoSprites[gordo.id] = display.markerPrefab.GetComponent<Image>().sprite;
                         }
                         if (s)
                         {
@@ -357,7 +361,7 @@ namespace Secret_Style_Things.Utils
                             }
                             catch (Exception e)
                             {
-                                Console.LogError($"An error occured while applying extra appearance applicator for {(gordo ? gordo : "null")} (Gordo Type = {gordoId})\n{e}");
+                                Console.LogError($"An error occured while applying extra appearance applicator for {(gordo ? gordo : "null")} (Gordo Type = {gordo.id})\n{e}");
                             }
                         var animator = gordo.GetComponent<GordoFaceAnimator>();
                         if (animator.HAPPY != null)
@@ -379,12 +383,12 @@ namespace Secret_Style_Things.Utils
 
         internal static void UpdatePuzzleSlotStyles(string basicName)
         {
-            var plortId = Identifiable.PLORT_CLASS.FirstOrDefault((x) => x.BasicName() == basicName);
-            var slimeId = Identifiable.SLIME_CLASS.FirstOrDefault((x) => x.BasicName() == basicName);
+            var plortId = Identifiable.PLORT_CLASS.FirstOrDefault(x => x.BasicName() == basicName);
+            var slimeId = Identifiable.SLIME_CLASS.FirstOrDefault(x => x.BasicName() == basicName);
             if (plortId == Identifiable.Id.NONE || slimeId == Identifiable.Id.NONE)
                 return;
             bool flag2 = originalPlortMaterials.TryGetValue(plortId, out var m);
-            bool flag = Main.activesecrets.Exists((j) => j.basicName == basicName);
+            bool flag = Main.activesecrets.Exists(j => j.basicName == basicName);
             var appearance = SRSingleton<GameContext>.Instance.SlimeDefinitions.GetSlimeByIdentifiableId(slimeId).GetAppearanceForSet(flag ? SlimeAppearance.AppearanceSaveSet.SECRET_STYLE : SlimeAppearance.AppearanceSaveSet.CLASSIC);
             if (flag)
                 m = appearance.Structures[0].DefaultMaterials[0];
@@ -421,12 +425,12 @@ namespace Secret_Style_Things.Utils
         }
         internal static void UpdatePlortStyles(string basicName)
         {
-            var plortId = Identifiable.PLORT_CLASS.FirstOrDefault((x) => x.BasicName() == basicName);
-            var slimeId = Identifiable.SLIME_CLASS.FirstOrDefault((x) => x.BasicName() == basicName);
+            var plortId = Identifiable.PLORT_CLASS.FirstOrDefault(x => x.BasicName() == basicName);
+            var slimeId = Identifiable.SLIME_CLASS.FirstOrDefault(x => x.BasicName() == basicName);
             if (plortId == Identifiable.Id.NONE || slimeId == Identifiable.Id.NONE)
                 return;
             bool flag2 = originalPlortMaterials.TryGetValue(plortId, out var m);
-            bool flag = Main.activesecrets.Exists((j) => j.basicName == basicName);
+            bool flag = Main.activesecrets.Exists(j => j.basicName == basicName);
             var appearance = SRSingleton<GameContext>.Instance.SlimeDefinitions.GetSlimeByIdentifiableId(slimeId).GetAppearanceForSet(flag ? SlimeAppearance.AppearanceSaveSet.SECRET_STYLE : SlimeAppearance.AppearanceSaveSet.CLASSIC);
             if (flag)
                 m = appearance.Structures[0].DefaultMaterials[0];
